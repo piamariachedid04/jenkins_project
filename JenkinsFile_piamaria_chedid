@@ -1,0 +1,70 @@
+pipeline {
+    agent any
+    environment {
+        VIRTUAL_ENV = 'venv'
+    }
+    stages {
+        stage('Setup') {
+            steps {
+                script {
+                    // Check if the virtual environment exists, if not, create it
+                    if (!fileExists("${env.WORKSPACE}/${VIRTUAL_ENV}")) {
+                        sh "python -m venv ${VIRTUAL_ENV}"
+                    }
+                    // Activate the virtual environment and install the dependencies
+                    sh '''
+                    if [ -f "${VIRTUAL_ENV}/bin/activate" ]; then
+                        source ${VIRTUAL_ENV}/bin/activate
+                    elif [ -f "${VIRTUAL_ENV}/Scripts/activate" ]; then
+                        source ${VIRTUAL_ENV}/Scripts/activate
+                    fi
+                    pip install -r requirements.txt
+                    '''
+                }
+            }
+        }
+        stage('Lint') {
+            steps {
+                script {
+                    // Run linter inside the virtual environment
+                    sh '''
+                    if [ -f "${VIRTUAL_ENV}/bin/activate" ]; then
+                        source ${VIRTUAL_ENV}/bin/activate
+                    elif [ -f "${VIRTUAL_ENV}/Scripts/activate" ]; then
+                        source ${VIRTUAL_ENV}/Scripts/activate
+                    fi
+                    flake8 app.py
+                    '''
+                }
+            }
+        }
+        stage('Test') {
+            steps {
+                script {
+                    // Run tests inside the virtual environment
+                    sh '''
+                    if [ -f "${VIRTUAL_ENV}/bin/activate" ]; then
+                        source ${VIRTUAL_ENV}/bin/activate
+                    elif [ -f "${VIRTUAL_ENV}/Scripts/activate" ]; then
+                        source ${VIRTUAL_ENV}/Scripts/activate
+                    fi
+                    pytest
+                    '''
+                }
+            }
+        }
+        stage('Deploy') {
+            steps {
+                script {
+                    // Deployment logic, e.g., pushing to a remote server
+                    echo "Deploying application..."
+                }
+            }
+        }
+    }
+    post {
+        always {
+            cleanWs()  // Clean the workspace after the pipeline finishes
+        }
+    }
+}
